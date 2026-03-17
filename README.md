@@ -11,6 +11,28 @@ This project is designed to show how LangChain and LangGraph can be used in a pr
 - Streamlit provides a fast self-service analytics workspace
 - FastAPI exposes the backend for analysis runs and saved workspaces
 
+## Demo
+
+Recommended assets to add to this repository:
+- `docs/images/dashboard-overview.png`
+- `docs/images/analysis-results.png`
+- `docs/images/copilot-chat.png`
+
+Suggested README screenshot section after you capture images:
+
+```md
+## Screenshots
+
+### Dashboard
+![Dashboard](docs/images/dashboard-overview.png)
+
+### Analysis Results
+![Analysis Results](docs/images/analysis-results.png)
+
+### Analytics Copilot
+![Analytics Copilot](docs/images/copilot-chat.png)
+```
+
 ## Quick Start
 
 ### 1. Install Dependencies
@@ -173,6 +195,16 @@ This project is licensed under the [MIT License](./LICENSE).
 -  Streaming graph execution updates
 -  Pinecone-backed retrieval for reusable pattern memory
 -  SQL and API data-source connectors
+
+## Open Source Roadmap
+
+Good contribution areas for new collaborators:
+- Better chart interactions and filtering
+- Streaming graph progress
+- SQL/API connectors
+- Authentication and user workspaces
+- Pinecone-backed memory across runs
+- Stronger tests and deployment support
 
 ## Learning Resources
 
