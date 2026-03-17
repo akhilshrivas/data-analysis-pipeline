@@ -2,6 +2,15 @@
 
 Self-service analytics workspace built with LangChain and LangGraph. Users can upload datasets, run a routed analysis graph, save runs, reopen past analyses, and ask a copilot questions against saved results.
 
+## Why This Project
+
+This project is designed to show how LangChain and LangGraph can be used in a practical analytics product:
+
+- LangGraph controls the workflow, routing, and optional steps
+- LangChain powers insight generation, report writing, and copilot Q&A
+- Streamlit provides a fast self-service analytics workspace
+- FastAPI exposes the backend for analysis runs and saved workspaces
+
 ## Quick Start
 
 ### 1. Install Dependencies
@@ -138,6 +147,14 @@ Do not commit:
 - generated run data in `data/runs`
 - uploaded user files in `data/uploads`
 - generated outputs in `data/outputs`
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, contribution rules, and pull request guidance.
+
+## License
+
+This project is licensed under the [MIT License](./LICENSE).
 
 ## Features
 
