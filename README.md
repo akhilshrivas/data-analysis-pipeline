@@ -11,8 +11,6 @@ This project is designed to show how LangChain and LangGraph can be used in a pr
 - Streamlit provides a fast self-service analytics workspace
 - FastAPI exposes the backend for analysis runs and saved workspaces
 
-## Demo
-
 ## Screenshots
 
 ### Dashboard
