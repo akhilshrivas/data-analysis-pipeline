@@ -13,15 +13,6 @@ This project is designed to show how LangChain and LangGraph can be used in a pr
 
 ## Demo
 
-Recommended assets to add to this repository:
-- `doc/Dashboard.png`
-- `doc/Card.png`
-- `doc/Copilot.png`
-- `doc/Frontend.jpeg`
-
-Suggested README screenshot section after you capture images:
-
-```md
 ## Screenshots
 
 ### Dashboard
@@ -35,7 +26,6 @@ Suggested README screenshot section after you capture images:
 
 ### Analytics Copilot
 ![Analytics Copilot](doc/Copilot.png)
-```
 
 ## Quick Start
 
