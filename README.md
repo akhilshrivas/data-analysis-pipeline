@@ -14,9 +14,10 @@ This project is designed to show how LangChain and LangGraph can be used in a pr
 ## Demo
 
 Recommended assets to add to this repository:
-- `docs/images/dashboard-overview.png`
-- `docs/images/analysis-results.png`
-- `docs/images/copilot-chat.png`
+- `doc/Dashboard.png`
+- `doc/Card.png`
+- `doc/Copilot.png`
+- `doc/Frontend.jpeg`
 
 Suggested README screenshot section after you capture images:
 
@@ -24,13 +25,16 @@ Suggested README screenshot section after you capture images:
 ## Screenshots
 
 ### Dashboard
-![Dashboard](docs/images/dashboard-overview.png)
+![Dashboard](doc/Dashboard.png)
 
 ### Analysis Results
-![Analysis Results](docs/images/analysis-results.png)
+![Analysis Results](doc/Card.png)
+
+### Frontend
+![Frontend](doc/Frontend.jpeg)
 
 ### Analytics Copilot
-![Analytics Copilot](docs/images/copilot-chat.png)
+![Analytics Copilot](doc/Copilot.png)
 ```
 
 ## Quick Start
