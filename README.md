@@ -159,20 +159,20 @@ This project is licensed under the [MIT License](./LICENSE).
 ## Features
 
 ### Implemented
-- ✅ LangGraph workflow orchestration
-- ✅ File upload and backend analysis flow
-- ✅ Data profiling and anomaly detection
-- ✅ LangChain-powered insight generation with fallback mode
-- ✅ LangChain-powered markdown report generation with saved output
-- ✅ Visualization recommendation layer for dashboard planning
-- ✅ Saved analysis workspace runs
-- ✅ Copilot Q&A against prior analyses
+-  LangGraph workflow orchestration
+-  File upload and backend analysis flow
+-  Data profiling and anomaly detection
+-  LangChain-powered insight generation with fallback mode
+-  LangChain-powered markdown report generation with saved output
+-  Visualization recommendation layer for dashboard planning
+-  Saved analysis workspace runs
+-  Copilot Q&A against prior analyses
 
 ### Next Upgrades
-- ⏳ Rich chart rendering inside Streamlit
-- ⏳ Streaming graph execution updates
-- ⏳ Pinecone-backed retrieval for reusable pattern memory
-- ⏳ SQL and API data-source connectors
+-  Rich chart rendering inside Streamlit
+-  Streaming graph execution updates
+-  Pinecone-backed retrieval for reusable pattern memory
+-  SQL and API data-source connectors
 
 ## Learning Resources
 
@@ -191,7 +191,7 @@ This project is licensed under the [MIT License](./LICENSE).
 Run Phase 1 verification:
 ```bash
 # 1. Check configuration
-python -c "from config import settings; settings.validate(); print('✅ Config OK')"
+python -c "from config import settings; settings.validate(); print('Config OK')"
 
 # 2. Start API server
 python main.py
@@ -205,7 +205,7 @@ streamlit run streamlit_app.py
 
 ## Notes
 
-- Max file size: 500MB
+- Max file size: 1024MB
 - Supported formats: CSV, JSON, XLSX
 - Analysis timeout: 5 minutes
 - API endpoints documented at `/docs` when running main.py
