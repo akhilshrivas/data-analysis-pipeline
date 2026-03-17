@@ -1,0 +1,30 @@
+# Core LangChain & LangGraph
+langchain
+langgraph
+langchain-openai
+
+# LLM & Embeddings
+openai
+python-dotenv
+
+# Backend & API
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+python-multipart
+
+# Frontend
+streamlit
+
+# Data Processing (pre-built wheels only)
+pandas
+numpy
+
+# Utilities
+requests
+aiohttp
+python-dateutil
+pytz
+tenacity
+pyyaml

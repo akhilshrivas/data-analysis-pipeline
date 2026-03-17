@@ -1,0 +1,36 @@
+*.pyc
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+env/
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# Data
+data/uploads/*
+data/outputs/*
+data/runs/*
+!data/uploads/.gitkeep
+!data/outputs/.gitkeep
+!data/runs/.gitkeep
+!data/samples/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
