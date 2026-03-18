@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
@@ -28,7 +28,7 @@ class RunStore:
     ) -> Dict[str, Any]:
         """Save a completed analysis run and return its stored record."""
         run_id = uuid4().hex[:12]
-        created_at = datetime.now(UTC).isoformat()
+        created_at = datetime.now(timezone.utc).isoformat()
         record = {
             "run_id": run_id,
             "created_at": created_at,

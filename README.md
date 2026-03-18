@@ -47,19 +47,28 @@ Important:
 - every contributor should create their own `.env`
 - commit only `.env.example`
 
-### 3. Run Backend API
-```bash
-python main.py
-# API runs on http://localhost:8010 by default
-```
-
-### 4. Run Frontend (in another terminal)
+### 3. Run Streamlit App
 ```bash
 streamlit run streamlit_app.py
 # UI runs on http://localhost:8501
 ```
 
-If you change the backend port, also set `DATA_PIPELINE_API_URL` in `.env`.
+By default, the app can now run in embedded mode, so Streamlit can execute the workflow without a separate backend.
+
+### 4. Optional: Run Backend API
+```bash
+python main.py
+# API runs on http://localhost:8010 by default
+```
+
+If you want the frontend to call FastAPI instead of using embedded mode, set:
+
+```bash
+DATA_PIPELINE_MODE=api
+DATA_PIPELINE_API_URL=http://localhost:8010
+```
+
+If `DATA_PIPELINE_MODE` is unset, the UI will auto-fallback to embedded mode when the API is unavailable.
 
 ## Project Structure
 
@@ -157,10 +166,37 @@ For contributors:
 
 Do not commit:
 - `.env`
+- `.streamlit/secrets.toml`
 - API keys in source files
 - generated run data in `data/runs`
 - uploaded user files in `data/uploads`
 - generated outputs in `data/outputs`
+
+## Free Deployment
+
+The simplest free deployment is Streamlit Community Cloud. That gives you a public URL usable on both mobile and desktop browsers.
+
+### Deploy On Streamlit Community Cloud
+
+1. Push this repo to GitHub.
+2. Open [share.streamlit.io](https://share.streamlit.io/).
+3. Click `New app`.
+4. Select your repo and use `streamlit_app.py` as the entry file.
+5. Add these app secrets:
+
+```toml
+OPENAI_API_KEY = "your_openai_api_key_here"
+OPENAI_MODEL = "gpt-4"
+DATA_PIPELINE_MODE = "embedded"
+MAX_FILE_SIZE_MB = "200"
+```
+
+6. Deploy and open the generated public URL on phone or desktop.
+
+Notes:
+- `DATA_PIPELINE_MODE = "embedded"` is the recommended free setup because it does not require a second hosted backend.
+- Streamlit Cloud storage is ephemeral, so uploaded files and saved runs can reset when the app restarts.
+- If you later deploy `main.py` somewhere else, you can switch back to API mode with `DATA_PIPELINE_MODE=api` and `DATA_PIPELINE_API_URL=<your-backend-url>`.
 
 ## Contributing
 
@@ -217,14 +253,11 @@ Run Phase 1 verification:
 # 1. Check configuration
 python -c "from config import settings; settings.validate(); print('Config OK')"
 
-# 2. Start API server
-python main.py
-
-# 3. In another terminal, check health
-curl http://localhost:8010/health
-
-# 4. Start Streamlit UI
+# 2. Start Streamlit UI
 streamlit run streamlit_app.py
+
+# 3. Optional: start API server if you want separate backend mode
+python main.py
 ```
 
 ## Notes

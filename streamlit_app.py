@@ -1,20 +1,116 @@
 """Streamlit UI for autonomous data analysis pipeline."""
 
-import streamlit as st
-import requests
-import pandas as pd
 import os
+from pathlib import Path
+from typing import Any
+from uuid import uuid4
+
+import pandas as pd
+import requests
+import streamlit as st
+
+from config import settings
+from services.run_store import RunStore
 
 # Page configuration
 st.set_page_config(
     page_title="Data Analysis Pipeline",
-    page_icon="📊",
+    page_icon=":bar_chart:",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# API endpoint
-API_URL = os.getenv("DATA_PIPELINE_API_URL", "http://localhost:8010")
+API_URL = settings.DATA_PIPELINE_API_URL
+BACKEND_MODE = os.getenv("DATA_PIPELINE_MODE", "auto").lower()
+
+
+@st.cache_resource
+def get_run_store() -> RunStore:
+    """Create a shared run store for embedded mode."""
+    return RunStore()
+
+
+@st.cache_resource
+def get_copilot_agent() -> Any:
+    """Create the analytics copilot once per app process."""
+    try:
+        from agents.copilot import AnalyticsCopilotAgent
+    except ModuleNotFoundError as exc:
+        missing_pkg = exc.name or "required package"
+        raise RuntimeError(
+            f"Copilot dependencies are missing: {missing_pkg}. Install requirements.txt before using the copilot."
+        ) from exc
+
+    return AnalyticsCopilotAgent()
+
+
+def _api_health_check() -> tuple[bool, str]:
+    """Validate that the configured API URL points to this project backend."""
+    health_response = requests.get(f"{API_URL}/health", timeout=2)
+    if health_response.status_code != 200:
+        return False, f"Health check failed with status {health_response.status_code}"
+
+    root_response = requests.get(f"{API_URL}/", timeout=2)
+    if root_response.status_code != 200:
+        return False, "Root endpoint is unavailable"
+
+    payload = root_response.json()
+    service_name = payload.get("service")
+    if service_name != "Data Analysis Pipeline API":
+        return False, f"Connected to the wrong service at {API_URL}"
+
+    return True, "API Connected"
+
+
+def resolve_backend_status() -> tuple[bool, str, str]:
+    """Resolve whether the UI should use a hosted API or embedded execution."""
+    if BACKEND_MODE == "embedded":
+        return True, "Embedded backend active", "embedded"
+
+    try:
+        api_ok, api_message = _api_health_check()
+        if api_ok:
+            return True, api_message, "api"
+    except Exception as exc:
+        api_message = str(exc)
+
+    if BACKEND_MODE == "auto":
+        return True, "Embedded backend active", "embedded"
+
+    return False, api_message, "api"
+
+
+def save_uploaded_file(uploaded_file) -> Path:
+    """Persist an uploaded file so the workflow can read it."""
+    uploads_dir = Path("data/uploads")
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    safe_name = Path(uploaded_file.name).name
+    file_path = uploads_dir / f"{uuid4().hex[:8]}_{safe_name}"
+    file_path.write_bytes(uploaded_file.getvalue())
+    return file_path
+
+
+def run_embedded_analysis(uploaded_file, options: dict) -> dict:
+    """Run the workflow directly inside Streamlit and persist the saved run."""
+    try:
+        from graph.workflow import run_analysis_sync
+    except ModuleNotFoundError as exc:
+        missing_pkg = exc.name or "required package"
+        raise RuntimeError(
+            f"Embedded analysis dependencies are missing: {missing_pkg}. Install requirements.txt before running analysis."
+        ) from exc
+
+    file_path = save_uploaded_file(uploaded_file)
+    result = run_analysis_sync(str(file_path), uploaded_file.name, options=options)
+    saved_run = get_run_store().save_run(
+        file_name=uploaded_file.name,
+        file_path=str(file_path),
+        options=options,
+        result=result,
+    )
+    result["run_id"] = saved_run["run_id"]
+    result["workspace_summary"] = saved_run["summary"]
+    return result
 
 
 def inject_custom_css():
@@ -338,29 +434,20 @@ def inject_custom_css():
     )
 
 
-def check_api_status() -> tuple[bool, str]:
-    """Validate that the configured API URL points to this project backend."""
-    try:
-        health_response = requests.get(f"{API_URL}/health", timeout=2)
-        if health_response.status_code != 200:
-            return False, f"Health check failed with status {health_response.status_code}"
+def fetch_runs(backend_mode: str) -> list[dict]:
+    """Fetch saved workspace runs from the active backend."""
+    if backend_mode == "embedded":
+        return [
+            {
+                "run_id": run["run_id"],
+                "created_at": run["created_at"],
+                "file_name": run["file_name"],
+                "summary": run.get("summary", {}),
+                "options": run.get("options", {}),
+            }
+            for run in get_run_store().list_runs()
+        ]
 
-        root_response = requests.get(f"{API_URL}/", timeout=2)
-        if root_response.status_code != 200:
-            return False, "Root endpoint is unavailable"
-
-        payload = root_response.json()
-        service_name = payload.get("service")
-        if service_name != "Data Analysis Pipeline API":
-            return False, f"Connected to the wrong service at {API_URL}"
-
-        return True, "API Connected"
-    except Exception as exc:
-        return False, str(exc)
-
-
-def fetch_runs() -> list[dict]:
-    """Fetch saved workspace runs from the backend."""
     try:
         response = requests.get(f"{API_URL}/runs", timeout=5)
         if response.status_code == 200:
@@ -370,8 +457,11 @@ def fetch_runs() -> list[dict]:
     return []
 
 
-def fetch_run_details(run_id: str) -> dict | None:
+def fetch_run_details(run_id: str, backend_mode: str) -> dict | None:
     """Fetch one saved run."""
+    if backend_mode == "embedded":
+        return get_run_store().get_run(run_id)
+
     try:
         response = requests.get(f"{API_URL}/runs/{run_id}", timeout=10)
         if response.status_code == 200:
@@ -381,8 +471,20 @@ def fetch_run_details(run_id: str) -> dict | None:
     return None
 
 
-def ask_copilot(question: str, run_id: str | None) -> dict | None:
+def ask_copilot(question: str, run_id: str | None, backend_mode: str) -> dict | None:
     """Ask the analytics copilot about a selected run."""
+    if backend_mode == "embedded":
+        run_store = get_run_store()
+        run_record = run_store.get_run(run_id) if run_id else run_store.latest_run()
+        if not run_record:
+            return None
+        answer = get_copilot_agent().answer(question, run_record)
+        return {
+            "run_id": run_record["run_id"],
+            "file_name": run_record["file_name"],
+            **answer,
+        }
+
     try:
         response = requests.post(
             f"{API_URL}/copilot/ask",
@@ -490,9 +592,14 @@ def render_chip_row(items: list[str], success: bool = False):
     st.markdown(f'<div class="chip-row">{chips}</div>', unsafe_allow_html=True)
 
 
-def render_hero(api_connected: bool, api_message: str):
+def render_hero(api_connected: bool, api_message: str, backend_mode: str):
     """Render the app hero section."""
     status = "Connected" if api_connected else "Backend Needed"
+    backend_chip = (
+        f"Backend: Embedded"
+        if backend_mode == "embedded"
+        else f"Backend: API ({API_URL})"
+    )
     st.markdown(
         f"""
         <div class="hero-panel">
@@ -505,7 +612,7 @@ def render_hero(api_connected: bool, api_message: str):
             </div>
             <div class="chip-row">
                 <span class="chip">{status}</span>
-                <span class="chip">API: {API_URL}</span>
+                <span class="chip">{backend_chip}</span>
                 <span class="chip">{api_message}</span>
             </div>
         </div>
@@ -518,11 +625,15 @@ def main():
     inject_custom_css()
     if "copilot_messages" not in st.session_state:
         st.session_state.copilot_messages = []
+    api_connected, api_message, backend_mode = resolve_backend_status()
     
     # Sidebar configuration
     with st.sidebar:
         st.header("⚙️ Configuration")
-        st.caption(f"API URL: {API_URL}")
+        if backend_mode == "embedded":
+            st.caption("Backend Mode: Embedded")
+        else:
+            st.caption(f"API URL: {API_URL}")
         
         analysis_type = st.radio(
             "Analysis Type",
@@ -536,16 +647,16 @@ def main():
         
         st.divider()
         
-        # API Status
-        api_connected, api_message = check_api_status()
+        # Backend status
         if api_connected:
-            st.success("✅ API Connected")
+            success_label = "✅ Embedded backend ready" if backend_mode == "embedded" else "✅ API Connected"
+            st.success(success_label)
         else:
             st.error(f"❌ {api_message}")
 
         st.divider()
         st.subheader("Workspace Runs")
-        runs = fetch_runs() if api_connected else []
+        runs = fetch_runs(backend_mode) if api_connected else []
         if runs:
             run_options = {
                 f"{run['file_name']} | {run['created_at'][:19]}": run["run_id"]
@@ -558,7 +669,7 @@ def main():
             )
             selected_run_id = run_options[selected_run_label]
             if st.button("Load Selected Run", use_container_width=True):
-                run_record = fetch_run_details(selected_run_id)
+                run_record = fetch_run_details(selected_run_id, backend_mode)
                 if run_record:
                     st.session_state.analysis_result = {
                         **run_record.get("result", {}),
@@ -571,7 +682,7 @@ def main():
         else:
             st.caption("No saved runs yet. Upload data to create your first workspace.")
 
-    render_hero(api_connected, api_message)
+    render_hero(api_connected, api_message, backend_mode)
 
     top_metrics = st.columns(4)
     with top_metrics[0]:
@@ -582,7 +693,8 @@ def main():
         )
         render_metric_card("Modules", str(enabled_count), "Enabled workflow modules")
     with top_metrics[2]:
-        render_metric_card("Formats", "CSV / JSON / XLSX", "Frontend preview + backend upload")
+        format_note = "Frontend preview + embedded workflow" if backend_mode == "embedded" else "Frontend preview + API upload"
+        render_metric_card("Formats", "CSV / JSON / XLSX", format_note)
     with top_metrics[3]:
         render_metric_card(
             "Learning Focus",
@@ -633,37 +745,49 @@ def main():
             ):
                 with st.spinner("Analyzing data... This may take a moment."):
                     try:
-                        response = requests.post(
-                            f"{API_URL}/analyze",
-                            files={"file": (uploaded_file.name, uploaded_file.getvalue())},
-                            data={
-                                "analysis_type": analysis_type,
-                                "include_anomalies": str(include_anomalies).lower(),
-                                "include_insights": str(include_insights).lower(),
-                                "include_visualizations": str(include_visualizations).lower(),
-                                "include_report": str(include_report).lower(),
-                            },
-                            timeout=30,
-                        )
-                        
-                        if response.status_code == 200:
-                            result = response.json()
+                        options = {
+                            "analysis_type": analysis_type,
+                            "include_anomalies": include_anomalies,
+                            "include_insights": include_insights,
+                            "include_visualizations": include_visualizations,
+                            "include_report": include_report,
+                        }
+                        if backend_mode == "embedded":
+                            result = run_embedded_analysis(uploaded_file, options)
+                        else:
+                            response = requests.post(
+                                f"{API_URL}/analyze",
+                                files={"file": (uploaded_file.name, uploaded_file.getvalue())},
+                                data={
+                                    "analysis_type": analysis_type,
+                                    "include_anomalies": str(include_anomalies).lower(),
+                                    "include_insights": str(include_insights).lower(),
+                                    "include_visualizations": str(include_visualizations).lower(),
+                                    "include_report": str(include_report).lower(),
+                                },
+                                timeout=30,
+                            )
+                            if response.status_code != 200:
+                                try:
+                                    error_payload = response.json()
+                                except Exception:
+                                    error_payload = {"detail": response.text}
+                                st.error(f"Analysis failed: {error_payload.get('detail', response.text)}")
+                                result = None
+                            else:
+                                result = response.json()
+
+                        if result:
                             st.session_state.analysis_dataframe = load_uploaded_dataframe(uploaded_file)
                             st.session_state.analysis_result = result
                             st.session_state.last_uploaded_name = uploaded_file.name
                             st.session_state.selected_run_id = result.get("run_id")
                             st.session_state.copilot_messages = []
                             st.success("Analysis completed!")
-                        else:
-                            try:
-                                error_payload = response.json()
-                            except Exception:
-                                error_payload = {"detail": response.text}
-                            st.error(f"Analysis failed: {error_payload.get('detail', response.text)}")
                     except Exception as e:
                         st.error(f"Error: {str(e)}")
 
-            if not api_connected:
+            if not api_connected and backend_mode == "api":
                 st.warning("Start the FastAPI backend first, then retry.")
     
     with col2:
@@ -774,7 +898,11 @@ def main():
         with copilot_cols[1]:
             if st.button("Ask Copilot", use_container_width=True):
                 if question.strip():
-                    reply = ask_copilot(question, result.get("run_id") or st.session_state.get("selected_run_id"))
+                    reply = ask_copilot(
+                        question,
+                        result.get("run_id") or st.session_state.get("selected_run_id"),
+                        backend_mode,
+                    )
                     if reply:
                         st.session_state.copilot_messages.append(
                             {"role": "user", "content": question}
@@ -783,7 +911,7 @@ def main():
                             {"role": "assistant", "content": reply.get("answer", ""), "mode": reply.get("mode", "")}
                         )
                     else:
-                        st.error("Copilot request failed. Check that the backend is running.")
+                        st.error("Copilot request failed. No saved run context was available.")
 
         for message in st.session_state.get("copilot_messages", []):
             with st.chat_message(message["role"]):
