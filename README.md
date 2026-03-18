@@ -204,6 +204,7 @@ Notes:
 - Streamlit Cloud storage is ephemeral, so uploaded files and saved runs can reset when the app restarts.
 - If you later deploy `main.py` somewhere else, you can switch back to API mode with `DATA_PIPELINE_MODE=api` and `DATA_PIPELINE_API_URL=<your-backend-url>`.
 - `requirements.txt` is intentionally trimmed for Streamlit Cloud reliability. The old full dependency set is in `requirements-full.txt`.
+- If Streamlit Cloud deploys with Python 3.14 and dependency installs hang or fail, recreate the app and choose Python 3.12 or 3.11 in Advanced settings.
 
 ## Contributing
 
