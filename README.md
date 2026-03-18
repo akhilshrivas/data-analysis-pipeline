@@ -32,6 +32,12 @@ This project is designed to show how LangChain and LangGraph can be used in a pr
 pip install -r requirements.txt
 ```
 
+If you want the larger local development stack, including the separate FastAPI backend and optional extras, use:
+
+```bash
+pip install -r requirements-full.txt
+```
+
 ### 2. Configure Environment
 ```bash
 cp .env.example .env
@@ -197,6 +203,7 @@ Notes:
 - `DATA_PIPELINE_MODE = "embedded"` is the recommended free setup because it does not require a second hosted backend.
 - Streamlit Cloud storage is ephemeral, so uploaded files and saved runs can reset when the app restarts.
 - If you later deploy `main.py` somewhere else, you can switch back to API mode with `DATA_PIPELINE_MODE=api` and `DATA_PIPELINE_API_URL=<your-backend-url>`.
+- `requirements.txt` is intentionally trimmed for Streamlit Cloud reliability. The old full dependency set is in `requirements-full.txt`.
 
 ## Contributing
 
