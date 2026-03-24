@@ -11,6 +11,7 @@ import streamlit as st
 
 from config import settings
 from services.run_store import RunStore
+from tools.data_loader import DataLoaderTool
 
 # Page configuration
 st.set_page_config(
@@ -500,19 +501,7 @@ def ask_copilot(question: str, run_id: str | None, backend_mode: str) -> dict | 
 
 def load_uploaded_dataframe(uploaded_file) -> pd.DataFrame:
     """Load an uploaded file into a dataframe for frontend chart rendering."""
-    file_name = uploaded_file.name.lower()
-    file_bytes = uploaded_file.getvalue()
-
-    if file_name.endswith(".csv"):
-        return pd.read_csv(pd.io.common.BytesIO(file_bytes))
-    if file_name.endswith(".json"):
-        try:
-            return pd.read_json(pd.io.common.BytesIO(file_bytes))
-        except ValueError:
-            return pd.read_json(pd.io.common.BytesIO(file_bytes), lines=True)
-    if file_name.endswith(".xlsx"):
-        return pd.read_excel(pd.io.common.BytesIO(file_bytes))
-    raise ValueError(f"Unsupported preview format: {uploaded_file.name}")
+    return DataLoaderTool.load_uploaded_file(uploaded_file)
 
 
 def render_histogram_like_chart(df: pd.DataFrame, column: str):
@@ -694,7 +683,7 @@ def main():
         render_metric_card("Modules", str(enabled_count), "Enabled workflow modules")
     with top_metrics[2]:
         format_note = "Frontend preview + embedded workflow" if backend_mode == "embedded" else "Frontend preview + API upload"
-        render_metric_card("Formats", "CSV / JSON / XLSX", format_note)
+        render_metric_card("Formats", "CSV / JSON / XLSX / TXT", format_note)
     with top_metrics[3]:
         render_metric_card(
             "Learning Focus",
@@ -718,8 +707,8 @@ def main():
             unsafe_allow_html=True,
         )
         uploaded_file = st.file_uploader(
-            "Choose a CSV, JSON, or XLSX file",
-            type=["csv", "json", "xlsx"],
+            "Choose a CSV, JSON, XLSX, or TXT file",
+            type=["csv", "json", "xlsx", "txt"],
             help="Max 1024MB"
         )
         
@@ -729,10 +718,9 @@ def main():
             # File preview
             with st.expander("Preview Data"):
                 try:
-                    if uploaded_file.name.endswith('.csv'):
-                        df = pd.read_csv(uploaded_file, nrows=10)
-                        st.dataframe(df, use_container_width=True)
-                        st.caption(f"Showing 10 of {len(df)} rows")
+                    preview_df = load_uploaded_dataframe(uploaded_file).head(10)
+                    st.dataframe(preview_df, use_container_width=True)
+                    st.caption(f"Showing {len(preview_df)} preview rows")
                 except Exception as e:
                     st.error(f"Cannot preview: {e}")
             

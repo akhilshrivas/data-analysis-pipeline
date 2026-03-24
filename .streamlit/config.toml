@@ -1,9 +1,15 @@
 [server]
-maxUploadSize = 1024
+headless = true
+port = 8501
+enableCORS = true
+enableXsrfProtection = true
+
+[browser]
+gatherUsageStats = false
 
 [theme]
-base = "dark"
-primaryColor = "#E06B2D"
+primaryColor = "#FF9347"
 backgroundColor = "#0F1417"
-secondaryBackgroundColor = "#182127"
+secondaryBackgroundColor = "#161E23"
 textColor = "#EDF3EF"
+font = "sans serif"

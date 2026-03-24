@@ -74,7 +74,7 @@ async def analyze_data(
     """
     Upload and analyze data file.
     
-    Accepts: CSV, JSON, XLSX
+    Accepts: CSV, JSON, XLSX, TXT
     Returns: Analysis results with insights, anomalies, and visualizations
     """
     try:

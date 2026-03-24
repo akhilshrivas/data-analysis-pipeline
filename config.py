@@ -44,7 +44,7 @@ class Settings:
     
     # Data Config
     MAX_FILE_SIZE_MB: int = int(_read_secret("MAX_FILE_SIZE_MB", "1024"))
-    ALLOWED_EXTENSIONS: list = ["csv", "json", "xlsx"]
+    ALLOWED_EXTENSIONS: list = ["csv", "json", "xlsx", "txt"]
     
     # Analysis Config
     ANALYSIS_TIMEOUT_SECONDS: int = 300
